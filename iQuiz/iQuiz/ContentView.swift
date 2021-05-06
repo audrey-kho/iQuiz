@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State var showingAlert: Bool = false
     @State var categories: [String] = ["Mathematics", "Marvel Superheroes", "Science"]
-    @State var dict: [String : [String]] = ["Mathematics": ["x.squareroot", "Put your problem solving skills to the test"], "Marvel Superheroes": ["burst", "How well do you know the heroes of the MCU??"], "Science": ["lightbulb", "Test your knowledge on scientific facts and principles"]]
+    @State var dict: [String : [String]] = ["Mathematics": ["x.squareroot", "Put your problem solving skills to the test"], "Marvel Superheroes": ["burst", "How well do you know the heroes of the MCU?"], "Science": ["lightbulb", "Test your knowledge on scientific facts and principles"]]
     
     var body: some View {
         NavigationView {
@@ -37,7 +37,7 @@ struct ContentView: View {
                 })
         }.alert(isPresented: $showingAlert, content: {
             Alert(title: Text("Alert"), message: Text("Settings go here"), dismissButton: .default(Text("Okay")))
-        })
+        }).navigationViewStyle(StackNavigationViewStyle())
     }
 }
 
