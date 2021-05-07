@@ -9,18 +9,18 @@ import SwiftUI
 
 struct ContentView: View {
     @State var showingAlert: Bool = false
-    @State var categories: [String] = ["Mathematics", "Marvel Superheroes", "Science"]
-    @State var dict: [String : [String]] = ["Mathematics": ["x.squareroot", "Put your problem solving skills to the test"], "Marvel Superheroes": ["burst", "How well do you know the heroes of the MCU?"], "Science": ["lightbulb", "Test your knowledge on scientific facts and principles"]]
+    @ObservedObject var categories: QuizList = QuizList()
     
     var body: some View {
         NavigationView {
             List {
-                ForEach(categories, id: \.self) { cat in
+                ForEach(categories.quizzes, id: \.self) { quiz in
                     HStack (spacing: 20) {
-                        Image(systemName: dict[cat]![0])
+                        Image(systemName: quiz.icon)
+                        
                         VStack (alignment: .leading, spacing: 5) {
-                            Text(cat).font(.title)
-                            Text(dict[cat]![1]).lineLimit(1)
+                            Text(quiz.name).font(.title2).fontWeight(.semibold)
+                            Text(quiz.desc).lineLimit(1)
                         }
                     }.padding(.vertical, /*@START_MENU_TOKEN@*/10/*@END_MENU_TOKEN@*/)
                 }
@@ -36,8 +36,32 @@ struct ContentView: View {
                     }
                 })
         }.alert(isPresented: $showingAlert, content: {
-            Alert(title: Text("Alert"), message: Text("Settings go here"), dismissButton: .default(Text("Okay")))
+            Alert(title: Text("Settings"), message: Text("Settings go here"), dismissButton: .default(Text("Okay")))
         }).navigationViewStyle(StackNavigationViewStyle())
+    }
+}
+
+class Quiz: NSObject {
+    var name: String
+    var desc: String
+    var icon: String
+    
+    init(name: String, desc: String, icon: String) {
+        self.name = name
+        self.desc = desc
+        self.icon = icon
+    }
+}
+
+class QuizList: ObservableObject {
+    @Published var quizzes: [Quiz] = []
+    
+    init() {
+        quizzes = [
+            Quiz(name: "Mathematics", desc: "Put your problem solving skills to the test", icon: "x.squareroot"),
+            Quiz(name: "Marvel Superheroes", desc: "How well do you know the heroes of the MCU?", icon: "burst"),
+            Quiz(name: "Science", desc: "Test your knowledge on scientific facts and principles", icon: "lightbulb")
+        ]
     }
 }
 
