@@ -6,90 +6,147 @@
 //
 
 import SwiftUI
-import Foundation
+import Network
 
 struct ContentView: View {
     @State var showingAlert: Bool = false
-    @ObservedObject var categories: QuizList = QuizList()
-
-    var body: some View {
-        NavigationView {
-            List {
-                ForEach(categories.quizzes, id: \.self) { quiz in
-                    NavigationLink(
-                        destination: VStack {
-                            HStack {
-                                Text(quiz.name).font(.largeTitle).fontWeight(.semibold)
-                                Spacer()
-                            }
-                            // quiz content
-                            QuizView(items: quiz.items)
-                        }.padding(20),
-                        label: {
-                            HStack (spacing: 20) {
-                                Image(systemName: quiz.icon)
-                                
-                                VStack (alignment: .leading, spacing: 5) {
-                                    Text(quiz.name).font(.title2).fontWeight(.semibold)
-                                    Text(quiz.desc).lineLimit(1)
-                                }
-                            }.padding(.vertical, 10)
-                        })
-                }
-            }.padding(.top, 5)
-                .navigationTitle("iQuiz")
-                .toolbar(content: {
-                    ToolbarItem {
-                        Button(action: {
-                            self.showingAlert = true
-                        }, label: {
-                            Text("Settings")
-                        })
-                    }
-                })
-        }.alert(isPresented: $showingAlert, content: {
-            Alert(title: Text("Settings"), message: Text("Settings go here"), dismissButton: .default(Text("Okay")))
-        }).navigationViewStyle(StackNavigationViewStyle())
-    }
-}
-
-class Quiz: NSObject {
-    var name: String
-    var desc: String
-    var icon: String
-    var items: [QuizItem]
-    
-    init(name: String, desc: String, icon: String, items: [QuizItem]) {
-        self.name = name
-        self.desc = desc
-        self.icon = icon
-        self.items = items
-    }
-}
-
-class QuizItem: Identifiable {
-    let id = UUID()
-    var question: String
-    var choices: [String]
-    var answer: Int
-    
-    init(q: String, choices: [String], answer: Int) {
-        self.question = q
-        self.choices = choices
-        self.answer = answer
-    }
-}
-
-class QuizList: ObservableObject {
-    @Published var quizzes: [Quiz] = []
+    @State private var networkAlert = false
+    @State private var downloadAlert = false
+    @State var categories = [Quiz]()
+    @State var jsonUrl = "http://tednewardsandbox.site44.com/questions.json"
+    // https://www.hackingwithswift.com/example-code/networking/how-to-check-for-internet-connectivity-using-nwpathmonitor
+    let monitor = NWPathMonitor()
     
     init() {
-        quizzes = [
-            Quiz(name: "Mathematics", desc: "Put your problem solving skills to the test", icon: "x.squareroot", items: [QuizItem(q: "What is the square root of 4?", choices: ["1", "2", "3", "4"], answer: 1)]),
-            Quiz(name: "Marvel Superheroes", desc: "How well do you know the heroes of the MCU?", icon: "burst", items: [QuizItem(q: "Who is Thor's brother?", choices: ["Odin", "Vision", "Loki", "Groot"], answer: 2), QuizItem(q: "Which infinity stone does Doctor Strange have?", choices: ["Mind", "Space", "Reality", "Time"], answer: 3), QuizItem(q: "What color is the Hulk?", choices: ["Blue", "Purple", "Green", "Yellow"], answer: 2)]),
-            Quiz(name: "Science", desc: "Test your knowledge on scientific facts and principles", icon: "lightbulb", items: [QuizItem(q: "What makes leaves green?", choices: ["cholorophyll", "bug poop", "oxygen", "the sun"], answer: 0)])
-        ]
+        monitor.pathUpdateHandler = { path in
+            if path.status == .satisfied {
+                print("We're connected!")
+            } else {
+                print("No connection.")
+            }
+        }
+        let queue = DispatchQueue.global(qos: .background)
+        monitor.start(queue: queue)
     }
+    
+    // https://www.hackingwithswift.com/forums/swiftui/decoding-json-data/3024
+    func loadData() {
+        if (monitor.currentPath.status != .satisfied) {
+            networkAlert = true
+            return
+        }
+        
+        guard let url = URL(string: self.jsonUrl) else {
+            self.downloadAlert = true
+            return
+        }
+        
+        let request = URLRequest(url: url)
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            do {
+                if let data = data {
+                    let decodedData = try JSONDecoder().decode([Quiz].self, from: data)
+                    print("DECODED DATA!!! \(decodedData)")
+                    DispatchQueue.main.async {
+                        self.categories = decodedData
+                        self.downloadAlert = false
+                        print(self.categories)
+                    }
+                } else {
+                    self.downloadAlert = true
+                }
+                
+            } catch {
+                print("Fetch failed: \(error.localizedDescription )")
+            }
+        }.resume()
+    }
+    
+    var body: some View {
+        NavigationView {
+            List (categories) { quiz in
+                NavigationLink(
+                    destination: VStack {
+                        HStack {
+                            Text(quiz.title).font(.largeTitle).fontWeight(.semibold)
+                            Spacer()
+                        }
+                        // quiz content
+                        QuizView(items: quiz.questions)
+                    }.padding(20),
+                    label: {
+                        HStack (spacing: 20) {
+                            Image(systemName: "hexagon.fill")
+                            
+                            VStack (alignment: .leading, spacing: 5) {
+                                Text(quiz.title).font(.title2).fontWeight(.semibold)
+                                Text(quiz.desc).lineLimit(1)
+                            }
+                        }.padding(.vertical, 10)
+                    }
+                )
+            }.onAppear(perform: loadData)
+            .padding(.top, 5)
+            .navigationTitle("iQuiz")
+            .toolbar(content: {
+                ToolbarItem {
+                    Button(action: {
+                        self.showingAlert = true
+                    }, label: {
+                        Text("Settings")
+                    })
+                    .popover(isPresented: $showingAlert) {
+                        VStack {
+                            Text("Settings")
+                                .font(.headline)
+                                .padding(.vertical)
+                            Spacer()
+                            VStack {
+                                Text("Link to JSON file").padding(10)
+                                TextField("http://tednewardsandbox.site44.com/questions.json", text: $jsonUrl)
+                                    .padding(10)
+                                    .border(Color.gray)
+                                    .cornerRadius(8)
+                            }.padding(20)
+                            .alert(isPresented: $networkAlert) {
+                                Alert(title: Text("Network Unavailable"), message: Text("Unable to establish a network connection"), dismissButton: .default(Text("Okay")))
+                            }
+                            Button(action: {
+                                self.loadData()
+                                self.showingAlert = false
+                            }, label: {
+                                Text("Check now")
+                                    .padding(30)
+                            }).alert(isPresented: $downloadAlert) {
+                                Alert(title: Text("Unable to Download"), message: Text("Check again later"), dismissButton: .default(Text("Okay")))
+                            }
+                            Spacer()
+                        }
+                    }
+                }
+            })
+        }.navigationViewStyle(StackNavigationViewStyle())
+    }
+}
+
+struct Quiz: Identifiable, Decodable {
+    var id = UUID()
+    var title: String = ""
+    var desc: String = ""
+    var questions: [QuizItem] = []
+    
+    private enum CodingKeys: String, CodingKey {
+        case title = "title"
+        case desc = "desc"
+        case questions = "questions"
+    }
+}
+
+struct QuizItem: Identifiable, Decodable {
+    var id = UUID()
+    var text: String = ""
+    var answers: [String] = []
+    var answer: Int = -1
 }
 
 struct ContentView_Previews: PreviewProvider {

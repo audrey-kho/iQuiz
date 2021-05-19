@@ -18,9 +18,9 @@ struct QuizView: View {
         let current = items[qNum]
         if (scene == "question") {
             VStack {
-                Text(current.question).padding(30)
+                Text(current.text).padding(30)
                 VStack {
-                    ForEach((0..<current.choices.count), id: \.self) { q in
+                    ForEach((0..<current.answers.count), id: \.self) { q in
                         genButton(i: q)
                     }
                 }
@@ -41,16 +41,16 @@ struct QuizView: View {
             }
         } else if (scene == "answer") {
             VStack {
-                Text(current.question).padding(30)
+                Text(current.text).padding(30)
                 VStack {
-                    ForEach((0..<current.choices.count), id: \.self) { q in
+                    ForEach((0..<current.answers.count), id: \.self) { q in
                         genButton(i: q)
                     }
                 }
                 Spacer()
                 if (click != current.answer) {
                     Text("Wrong!").font(.title3).foregroundColor(.red)
-                    Text("The correct answer is \(current.choices[current.answer])").font(.subheadline)
+                    Text("The correct answer is \(current.answers[current.answer])").font(.subheadline)
                 } else {
                     Text("Correct!").font(.title3).foregroundColor(.green)
                 }
@@ -122,7 +122,7 @@ struct QuizView: View {
                     click = i
                 }
             }, label: {
-                Text(verbatim: current.choices[i])
+                Text(verbatim: current.answers[i])
                     .multilineTextAlignment(.center)
                     .padding()
                     .foregroundColor(.white)
