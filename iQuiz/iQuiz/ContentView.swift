@@ -46,7 +46,6 @@ struct ContentView: View {
             do {
                 if let data = data {
                     let decodedData = try JSONDecoder().decode([Quiz].self, from: data)
-                    print("DECODED DATA!!! \(decodedData)")
                     DispatchQueue.main.async {
                         self.categories = decodedData
                         self.downloadAlert = false
@@ -73,10 +72,10 @@ struct ContentView: View {
                         }
                         // quiz content
                         QuizView(items: quiz.questions)
-                    }.padding(20),
+                    }.padding(.horizontal, 20),
                     label: {
                         HStack (spacing: 20) {
-                            Image(systemName: "hexagon.fill")
+                            Image(systemName: "doc.text")
                             
                             VStack (alignment: .leading, spacing: 5) {
                                 Text(quiz.title).font(.title2).fontWeight(.semibold)
@@ -130,23 +129,21 @@ struct ContentView: View {
 }
 
 struct Quiz: Identifiable, Decodable {
-    var id = UUID()
+    var id:String {title}
     var title: String = ""
     var desc: String = ""
     var questions: [QuizItem] = []
     
     private enum CodingKeys: String, CodingKey {
-        case title = "title"
-        case desc = "desc"
-        case questions = "questions"
+        case title, desc, questions
     }
 }
 
 struct QuizItem: Identifiable, Decodable {
-    var id = UUID()
+    var id: String {text}
     var text: String = ""
     var answers: [String] = []
-    var answer: Int = -1
+    var answer: String = ""
 }
 
 struct ContentView_Previews: PreviewProvider {

@@ -31,7 +31,7 @@ struct QuizView: View {
                 if (click > -1) {
                     Button(action: {
                         scene = "answer"
-                        if (click == current.answer) {
+                        if (click == Int(current.answer)! - 1) {
                             score += 1
                         }
                     }, label: {
@@ -48,9 +48,9 @@ struct QuizView: View {
                     }
                 }
                 Spacer()
-                if (click != current.answer) {
+                if (click != Int(current.answer)! - 1) {
                     Text("Wrong!").font(.title3).foregroundColor(.red)
-                    Text("The correct answer is \(current.answers[current.answer])").font(.subheadline)
+                    Text("Correct answer: \(current.answers[Int(current.answer)! - 1])").font(.subheadline).padding(2)
                 } else {
                     Text("Correct!").font(.title3).foregroundColor(.green)
                 }
@@ -105,7 +105,7 @@ struct QuizView: View {
                 color = .secondary
             }
         } else if (scene == "answer") {
-            if (i == current.answer && click == i) {
+            if (i == Int(current.answer)! - 1 && click == i) {
                 // correct ans
                 color = .green
             } else if (click == i) {
@@ -126,7 +126,7 @@ struct QuizView: View {
                     .multilineTextAlignment(.center)
                     .padding()
                     .foregroundColor(.white)
-                    .frame(width: 200, height: 50, alignment: .center)
+                    .frame(width: 200, height: 80, alignment: .center)
             })
             .disabled(scene != "question")
             .background(color)
